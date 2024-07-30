@@ -10,9 +10,9 @@ from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QTe
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 from PyQt5.QtGui import QFont
 
-# Параметры записи
+
 FORMAT = pyaudio.paInt16
-CHANNELS = 3  # Установим 3 канала для записи
+CHANNELS = 3 
 RATE = 44100
 CHUNK = 1024
 
@@ -28,9 +28,9 @@ class AudioRecorder(QWidget):
         self.stream = None
         self.recording_thread = None
         self.stop_event = threading.Event()
-        self.frames = deque(maxlen=int(RATE / CHUNK * 60))  # Максимальная длина 60 секунд
+        self.frames = deque(maxlen=int(RATE / CHUNK * 60)) 
         self.is_recording = False
-        self.record_seconds = 10  # Время записи по умолчанию
+        self.record_seconds = 10  
         self.signal_handler = SignalHandler()
         self.signal_handler.finished.connect(self.on_finished)
         self.signal_handler.log_signal.connect(self.update_log)
@@ -61,13 +61,13 @@ class AudioRecorder(QWidget):
         self.stop_60_button.clicked.connect(lambda: self.stop_recording(60))
         layout.addWidget(self.stop_60_button)
 
-        self.reset_button = QPushButton('Обновить ветку - перед каждым собесом', self)
+        self.reset_button = QPushButton('Обновить ветку', self)
         self.reset_button.clicked.connect(self.reset_thread_id)
         layout.addWidget(self.reset_button)
 
         self.text_edit = QTextEdit(self)
         font = QFont()
-        font.setPointSize(10)  # Устанавливаем меньший шрифт
+        font.setPointSize(10)  
         self.text_edit.setFont(font)
         self.text_edit.setReadOnly(True)
         layout.addWidget(self.text_edit)
@@ -80,7 +80,7 @@ class AudioRecorder(QWidget):
             self.is_recording = True
             self.log("Recording...")
             self.stop_event.clear()
-            self.frames.clear()  # Очищаем предыдущие данные
+            self.frames.clear()  
             self.recording_thread = threading.Thread(target=self.record)
             self.recording_thread.start()
 
@@ -131,23 +131,23 @@ class AudioRecorder(QWidget):
         self.stream.stop_stream()
         self.stream.close()
 
-        # Сохраняем только последние record_seconds секунд
+        
         maxlen = int(RATE / CHUNK * self.record_seconds)
         recent_frames = list(self.frames)[-maxlen:]
 
-        # Обработка данных и сохранение только третьего канала в моно
+        
         mono_frames = []
         for frame in recent_frames:
-            # Преобразуем данные в массив numpy
+            
             data = np.frombuffer(frame, dtype=np.int16)
-            # Извлекаем данные только третьего канала
+            
             third_channel_data = data[2::CHANNELS]
-            # Добавляем данные третьего канала в моно формат
+            
             mono_frames.extend(third_channel_data)
 
-        # Сохранение записи в файл
+        
         wf = wave.open(filename, 'wb')
-        wf.setnchannels(1)  # Установим 1 канал для моно
+        wf.setnchannels(1)  #  1 канал для моно
         wf.setsampwidth(self.audio.get_sample_size(FORMAT))
         wf.setframerate(RATE)
         wf.writeframes(np.array(mono_frames, dtype=np.int16).tobytes())
@@ -163,14 +163,14 @@ class AudioRecorder(QWidget):
 
     @pyqtSlot(str)
     def on_finished(self, filename):
-        # Проверка наличия файла с идентификаторами
+        
         if os.path.exists('session_ids.txt'):
             with open('session_ids.txt', 'r') as f:
                 ids = f.readlines()
                 self.thread_id = ids[0].strip()
                 self.assistant_id = ids[1].strip()
 
-        # Запуск второго скрипта для обработки файла с использованием OpenAI
+        
         import subprocess
         def log_output(pipe):
             for line in pipe:
